@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Examples - Approval Hierarchy System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            background-color: #1976d2;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+        main {
+            padding: 2rem;
+        }
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        h1, h2, h3 {
+            margin-top: 0;
+        }
+        pre {
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            overflow-x: auto;
+        }
+        code {
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #1976d2;
+            color: white;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+        .btn:hover {
+            background-color: #1565c0;
+        }
+        .endpoint {
+            margin-bottom: 30px;
+            border-left: 4px solid #1976d2;
+            padding-left: 15px;
+        }
+        .method {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .get {
+            background-color: #4caf50;
+        }
+        .post {
+            background-color: #ff9800;
+        }
+        .put {
+            background-color: #2196f3;
+        }
+        .delete {
+            background-color: #f44336;
+        }
+        .patch {
+            background-color: #9c27b0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Approval Hierarchy System - API Examples</h1>
+    </header>
+    <main class="container">
+        <div class="card">
+            <h2>API Examples</h2>
+            <p>This page provides examples of how to use the REST API endpoints of the Approval Hierarchy System.</p>
+            <a href="/" class="btn">Back to Home</a>
+        </div>
+        
+        <div class="card">
+            <h2>Employee API</h2>
+            
+            <div class="endpoint">
+                <h3><span class="method get">GET</span> /api/employees</h3>
+                <p>Get all employees in the system.</p>
+                <h4>Example Request:</h4>
+                <pre><code>curl -X GET http://localhost:8080/api/employees</code></pre>
+                <h4>Example Response:</h4>
+                <pre><code>[
+  {
+    "id": 1,
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "position": "Manager",
+    "available": true,
+    "manager": null
+  },
+  {
+    "id": 2,
+    "name": "Jane Smith",
+    "email": "jane.smith@example.com",
+    "position": "Team Lead",
+    "available": true,
+    "manager": {
+      "id": 1,
+      "name": "John Doe"
+    }
+  }
+]</code></pre>
+            </div>
+            
+            <div class="endpoint">
+                <h3><span class="method post">POST</span> /api/employees</h3>
+                <p>Create a new employee.</p>
+                <h4>Example Request:</h4>
+                <pre><code>curl -X POST http://localhost:8080/api/employees \
+-H "Content-Type: application/json" \
+-d '{
+  "name": "Alice Johnson",
+  "email": "alice.johnson@example.com",
+  "position": "Developer",
+  "available": true,
+  "manager": {
+    "id": 2
+  }
+}'</code></pre>
+                <h4>Example Response:</h4>
+                <pre><code>{
+  "id": 3,
+  "name": "Alice Johnson",
+  "email": "alice.johnson@example.com",
+  "position": "Developer",
+  "available": true,
+  "manager": {
+    "id": 2,
+    "name": "Jane Smith"
+  }
+}</code></pre>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>Approval API</h2>
+            
+            <div class="endpoint">
+                <h3><span class="method get">GET</span> /api/approvals</h3>
+                <p>Get all approval requests.</p>
+                <h4>Example Request:</h4>
+                <pre><code>curl -X GET http://localhost:8080/api/approvals</code></pre>
+                <h4>Example Response:</h4>
+                <pre><code>[
+  {
+    "id": 1,
+    "title": "Vacation Request",
+    "description": "Requesting 5 days of vacation",
+    "status": "PENDING",
+    "comments": null,
+    "createdAt": "2025-03-30T10:15:30",
+    "updatedAt": "2025-03-30T10:15:30",
+    "requester": {
+      "id": 3,
+      "name": "Alice Johnson"
+    },
+    "currentApprover": {
+      "id": 2,
+      "name": "Jane Smith"
+    }
+  }
+]</code></pre>
+            </div>
+            
+            <div class="endpoint">
+                <h3><span class="method post">POST</span> /api/approvals</h3>
+                <p>Create a new approval request.</p>
+                <h4>Example Request:</h4>
+                <pre><code>curl -X POST "http://localhost:8080/api/approvals?requesterId=3" \
+-H "Content-Type: application/json" \
+-d '{
+  "title": "Equipment Purchase",
+  "description": "Need a new laptop for development work"
+}'</code></pre>
+                <h4>Example Response:</h4>
+                <pre><code>{
+  "id": 2,
+  "title": "Equipment Purchase",
+  "description": "Need a new laptop for development work",
+  "status": "PENDING",
+  "comments": null,
+  "createdAt": "2025-03-30T11:20:15",
+  "updatedAt": "2025-03-30T11:20:15",
+  "requester": {
+    "id": 3,
+    "name": "Alice Johnson"
+  },
+  "currentApprover": {
+    "id": 2,
+    "name": "Jane Smith"
+  }
+}</code></pre>
+            </div>
+            
+            <div class="endpoint">
+                <h3><span class="method post">POST</span> /api/approvals/{id}/approve</h3>
+                <p>Approve a request.</p>
+                <h4>Example Request:</h4>
+                <pre><code>curl -X POST http://localhost:8080/api/approvals/1/approve \
+-H "Content-Type: application/json" \
+-d '{
+  "comments": "Approved. Enjoy your vacation!"
+}'</code></pre>
+                <h4>Example Response:</h4>
+                <pre><code>{
+  "id": 1,
+  "title": "Vacation Request",
+  "description": "Requesting 5 days of vacation",
+  "status": "APPROVED",
+  "comments": "Approved. Enjoy your vacation!",
+  "createdAt": "2025-03-30T10:15:30",
+  "updatedAt": "2025-03-30T12:05:45",
+  "requester": {
+    "id": 3,
+    "name": "Alice Johnson"
+  },
+  "currentApprover": {
+    "id": 2,
+    "name": "Jane Smith"
+  }
+}</code></pre>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
