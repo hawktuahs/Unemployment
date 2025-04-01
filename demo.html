@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Approval Workflow Demo</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .header {
+            background-color: #1976d2;
+            color: white;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .container {
+            max-width: 1200px;
+            margin: 24px auto;
+            padding: 24px;
+        }
+        .card {
+            background-color: white;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+        h1, h2, h3 {
+            margin-top: 0;
+        }
+        .button {
+            background-color: #1976d2;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            margin-right: 8px;
+        }
+        .button.green {
+            background-color: #4caf50;
+        }
+        .button.red {
+            background-color: #f44336;
+        }
+        .button.blue {
+            background-color: #2196f3;
+        }
+        .button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        th {
+            background-color: #f5f5f5;
+            font-weight: 500;
+        }
+        .status {
+            padding: 4px 8px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
+        }
+        .status.pending {
+            background-color: #ffeb3b;
+            color: #000;
+        }
+        .status.approved {
+            background-color: #4caf50;
+            color: white;
+        }
+        .status.rejected {
+            background-color: #f44336;
+            color: white;
+        }
+        .status.escalated {
+            background-color: #2196f3;
+            color: white;
+        }
+        .nav {
+            display: flex;
+        }
+        .nav-item {
+            color: white;
+            margin: 0 12px;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #4caf50;
+            color: white;
+            padding: 16px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: opacity 0.3s;
+            opacity: 0;
+        }
+        .employee-row {
+            transition: background-color 0.3s;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .3s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #4caf50;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .availability-label {
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Approval Workflow System</h1>
+        <div class="nav">
+            <a href="#dashboard" class="nav-item" id="nav-dashboard">Dashboard</a>
+            <a href="#employees" class="nav-item" id="nav-employees">Employee Management</a>
+            <a href="#submit" class="nav-item" id="nav-submit">Submit Request</a>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div id="dashboard">
+            <h2>Dashboard</h2>
+            
+            <div class="card">
+                <div style="margin-bottom: 16px;">
+                    <label for="employee-filter" style="display: block; margin-bottom: 8px;">Filter by Employee</label>
+                    <select id="employee-filter" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                        <option value="all">All Requests</option>
+                        <option value="1">Alice (Principal)</option>
+                        <option value="2">Bob (Supervisor)</option>
+                        <option value="3">Charlie (Teacher)</option>
+                    </select>
+                </div>
+                
+                <h3>Pending Approval Requests</h3>
+                <table id="requests-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Requester</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                            <th>Created At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr data-request-id="1" data-requester-id="3">
+                            <td>1</td>
+                            <td>Charlie</td>
+                            <td>Request for project funding</td>
+                            <td><span class="status pending">PENDING</span></td>
+                            <td>2023-03-01 10:00:00</td>
+                            <td>
+                                <button class="button green approval-btn">Approve</button>
+                                <button class="button red reject-btn">Reject</button>
+                                <button class="button blue escalate-btn">Escalate</button>
+                            </td>
+                        </tr>
+                        <tr data-request-id="2" data-requester-id="3">
+                            <td>2</td>
+                            <td>Charlie</td>
+                            <td>Request for time off</td>
+                            <td><span class="status escalated">ESCALATED</span></td>
+                            <td>2023-03-02 14:30:00</td>
+                            <td>
+                                <button class="button green approval-btn">Approve</button>
+                                <button class="button red reject-btn">Reject</button>
+                                <button class="button blue escalate-btn" disabled>Escalate</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div id="employees" style="display: none;">
+            <h2>Employee Management</h2>
+            
+            <div class="card">
+                <button class="button" id="create-employee-btn" style="margin-bottom: 16px;">Create New Employee</button>
+                <table id="employees-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Position</th>
+                            <th>Manager/Supervisor</th>
+                            <th>Availability</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="employee-row" data-employee-id="1">
+                            <td>1</td>
+                            <td>Alice</td>
+                            <td>alice@example.com</td>
+                            <td>Principal</td>
+                            <td>None</td>
+                            <td>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" class="availability-toggle" checked>
+                                    <span class="slider"></span>
+                                </label>
+                                <span class="availability-label">AVAILABLE</span>
+                            </td>
+                            <td>
+                                <button class="button change-supervisor-btn">Change Supervisor</button>
+                            </td>
+                        </tr>
+                        <tr class="employee-row" data-employee-id="2">
+                            <td>2</td>
+                            <td>Bob</td>
+                            <td>bob@example.com</td>
+                            <td>Supervisor</td>
+                            <td>Alice</td>
+                            <td>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" class="availability-toggle" checked>
+                                    <span class="slider"></span>
+                                </label>
+                                <span class="availability-label">AVAILABLE</span>
+                            </td>
+                            <td>
+                                <button class="button change-supervisor-btn">Change Supervisor</button>
+                            </td>
+                        </tr>
+                        <tr class="employee-row" data-employee-id="3">
+                            <td>3</td>
+                            <td>Charlie</td>
+                            <td>charlie@example.com</td>
+                            <td>Teacher</td>
+                            <td>Bob</td>
+                            <td>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" class="availability-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                                <span class="availability-label">UNAVAILABLE</span>
+                            </td>
+                            <td>
+                                <button class="button change-supervisor-btn">Change Supervisor</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div id="submit" style="display: none;">
+            <h2>Submit New Request</h2>
+            
+            <div class="card">
+                <form id="request-form">
+                    <div style="margin-bottom: 16px;">
+                        <label for="requester" style="display: block; margin-bottom: 8px;">Requester</label>
+                        <select id="requester" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                            <option value="1">Alice (Principal)</option>
+                            <option value="2">Bob (Supervisor)</option>
+                            <option value="3">Charlie (Teacher)</option>
+                        </select>
+                    </div>
+                    
+                    <div style="margin-bottom: 16px;">
+                        <label for="description" style="display: block; margin-bottom: 8px;">Request Description</label>
+                        <textarea id="description" rows="4" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" required></textarea>
+                    </div>
+                    
+                    <div>
+                        <button type="button" class="button" id="cancel-btn" style="background-color: #9e9e9e;">Cancel</button>
+                        <button type="submit" class="button" id="submit-btn">Submit Request</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+    
+    <div id="supervisor-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 100; justify-content: center; align-items: center;">
+        <div style="background-color: white; padding: 24px; border-radius: 4px; max-width: 400px; width: 100%;">
+            <h3>Change Supervisor</h3>
+            <p>Select a new supervisor for <span id="employee-name"></span>:</p>
+            <select id="supervisor-select" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 16px;">
+                <option value="">None</option>
+                <option value="1">Alice (Principal)</option>
+                <option value="2">Bob (Supervisor)</option>
+            </select>
+            <div style="display: flex; justify-content: flex-end;">
+                <button class="button" id="cancel-supervisor" style="background-color: #9e9e9e;">Cancel</button>
+                <button class="button" id="save-supervisor">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="create-employee-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 100; justify-content: center; align-items: center;">
+        <div style="background-color: white; padding: 24px; border-radius: 4px; max-width: 400px; width: 100%;">
+            <h3>Create New Employee</h3>
+            <form id="create-employee-form">
+                <div style="margin-bottom: 16px;">
+                    <label for="new-name" style="display: block; margin-bottom: 8px;">Name</label>
+                    <input type="text" id="new-name" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" required>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label for="new-email" style="display: block; margin-bottom: 8px;">Email</label>
+                    <input type="email" id="new-email" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" required>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label for="new-position" style="display: block; margin-bottom: 8px;">Position</label>
+                    <input type="text" id="new-position" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" required>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label for="new-supervisor" style="display: block; margin-bottom: 8px;">Supervisor</label>
+                    <select id="new-supervisor" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                        <option value="">None</option>
+                        <option value="1">Alice (Principal)</option>
+                        <option value="2">Bob (Supervisor)</option>
+                        <option value="3">Charlie (Teacher)</option>
+                    </select>
+                </div>
+                <div style="display: flex; justify-content: flex-end;">
+                    <button type="button" class="button" id="cancel-create" style="background-color: #9e9e9e;">Cancel</button>
+                    <button type="submit" class="button" id="create-employee-save">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div id="login-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 100; justify-content: center; align-items: center;">
+        <div style="background-color: white; padding: 24px; border-radius: 4px; max-width: 400px; width: 100%;">
+            <h3>Login</h3>
+            <form id="login-form">
+                <div style="margin-bottom: 16px;">
+                    <label for="login-email" style="display: block; margin-bottom: 8px;">Email</label>
+                    <input type="email" id="login-email" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" required>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label for="login-password" style="display: block; margin-bottom: 8px;">Password</label>
+                    <input type="password" id="login-password" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" required>
+                </div>
+                <div style="display: flex; justify-content: flex-end;">
+                    <button type="button" class="button" id="cancel-login" style="background-color: #9e9e9e;">Cancel</button>
+                    <button type="submit" class="button">Login</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Employee filter functionality
+            document.getElementById('employee-filter').addEventListener('change', function() {
+                const selectedEmployeeId = this.value;
+                const rows = document.querySelectorAll('#requests-table tbody tr');
+                
+                rows.forEach(row => {
+                    if (selectedEmployeeId === 'all') {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = row.getAttribute('data-requester-id') === selectedEmployeeId ? '' : 'none';
+                    }
+                });
+            });
+            
+            // Modify employee availability toggle to handle request forwarding
+            const availabilityToggles = document.querySelectorAll('.availability-toggle');
+            availabilityToggles.forEach(toggle => {
+                toggle.addEventListener('change', function() {
+                    const row = this.closest('tr');
+                    const employeeId = row.getAttribute('data-employee-id');
+                    const label = row.querySelector('.availability-label');
+                    const employeeName = row.children[1].textContent;
+                    
+                    if (this.checked) {
+                        label.textContent = 'AVAILABLE';
+                        showToast(`Employee #${employeeId} is now available.`);
+                    } else {
+                        label.textContent = 'UNAVAILABLE';
+                        // Forward pending requests to supervisor
+                        forwardRequestsToSupervisor(employeeId, employeeName);
+                        showToast(`Employee #${employeeId} is now unavailable. Pending requests will be escalated.`);
+                    }
+                });
+            });
+            
+            function forwardRequestsToSupervisor(employeeId, employeeName) {
+                const requests = document.querySelectorAll(`#requests-table tbody tr[data-requester-id="${employeeId}"]`);
+                requests.forEach(request => {
+                    const statusElement = request.querySelector('.status');
+                    if (statusElement.textContent === 'PENDING') {
+                        statusElement.className = 'status escalated';
+                        statusElement.textContent = 'ESCALATED';
+                        request.querySelector('.escalate-btn').disabled = true;
+                        showToast(`Request #${request.getAttribute('data-request-id')} has been escalated due to ${employeeName}'s unavailability.`);
+                    }
+                });
+            }
+            
+            // Modify submit request form to include requester ID
+            document.getElementById('request-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const requesterId = document.getElementById('requester').value;
+                const description = document.getElementById('description').value;
+                
+                if (!requesterId || !description.trim()) {
+                    showToast('Please fill in all required fields', 'error');
+                    return;
+                }
+                
+                // Get requester name
+                const requesterOptions = document.getElementById('requester').options;
+                const requesterName = requesterOptions[requesterOptions.selectedIndex].text.split(' ')[0];
+                
+                // Create new row
+                const tbody = document.querySelector('#requests-table tbody');
+                const newRequestId = tbody.children.length + 1;
+                
+                const newRow = document.createElement('tr');
+                newRow.setAttribute('data-request-id', newRequestId);
+                newRow.setAttribute('data-requester-id', requesterId);
+                newRow.innerHTML = `
+                    <td>${newRequestId}</td>
+                    <td>${requesterName}</td>
+                    <td>${description}</td>
+                    <td><span class="status pending">PENDING</span></td>
+                    <td>${new Date().toLocaleString()}</td>
+                    <td>
+                        <button class="button green approval-btn">Approve</button>
+                        <button class="button red reject-btn">Reject</button>
+                        <button class="button blue escalate-btn">Escalate</button>
+                    </td>
+                `;
+                
+                // Add event listeners to new buttons
+                const newApproveBtn = newRow.querySelector('.approval-btn');
+                newApproveBtn.addEventListener('click', function() {
+                    const statusElement = newRow.querySelector('.status');
+                    statusElement.className = 'status approved';
+                    statusElement.textContent = 'APPROVED';
+                    newRow.querySelectorAll('button').forEach(btn => {
+                        btn.disabled = true;
+                    });
+                    showToast(`Request #${newRequestId} approved successfully!`);
+                });
+                
+                const newRejectBtn = newRow.querySelector('.reject-btn');
+                newRejectBtn.addEventListener('click', function() {
+                    const statusElement = newRow.querySelector('.status');
+                    statusElement.className = 'status rejected';
+                    statusElement.textContent = 'REJECTED';
+                    newRow.querySelectorAll('button').forEach(btn => {
+                        btn.disabled = true;
+                    });
+                    showToast(`Request #${newRequestId} rejected successfully!`);
+                });
+                
+                const newEscalateBtn = newRow.querySelector('.escalate-btn');
+                newEscalateBtn.addEventListener('click', function() {
+                    const statusElement = newRow.querySelector('.status');
+                    statusElement.className = 'status escalated';
+                    statusElement.textContent = 'ESCALATED';
+                    this.disabled = true;
+                    showToast(`Request #${newRequestId} escalated successfully!`);
+                });
+                
+                tbody.appendChild(newRow);
+                
+                // Reset form
+                document.getElementById('description').value = '';
+                
+                // Show dashboard with new request
+                showSection('dashboard');
+                
+                showToast('Request submitted successfully!');
+            });
+            
+            // Navigation
+            document.getElementById('nav-dashboard').addEventListener('click', function(e) {
+                e.preventDefault();
+                showSection('dashboard');
+            });
+            
+            document.getElementById('nav-employees').addEventListener('click', function(e) {
+                e.preventDefault();
+                showSection('employees');
+            });
+            
+            document.getElementById('nav-submit').addEventListener('click', function(e) {
+                e.preventDefault();
+                showSection('submit');
+            });
+            
+            function showSection(sectionId) {
+                document.getElementById('dashboard').style.display = 'none';
+                document.getElementById('employees').style.display = 'none';
+                document.getElementById('submit').style.display = 'none';
+                document.getElementById(sectionId).style.display = 'block';
+            }
+            
+            // Toast messages
+            function showToast(message, type = 'success') {
+                const toast = document.getElementById('toast');
+                toast.textContent = message;
+                toast.style.backgroundColor = type === 'success' ? '#4caf50' : '#f44336';
+                toast.style.opacity = '1';
+                
+                setTimeout(function() {
+                    toast.style.opacity = '0';
+                }, 3000);
+            }
+            
+            // Change supervisor modal
+            const changeSupervisorButtons = document.querySelectorAll('.change-supervisor-btn');
+            changeSupervisorButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const row = this.closest('tr');
+                    const employeeId = row.getAttribute('data-employee-id');
+                    const employeeName = row.children[1].textContent;
+                    
+                    document.getElementById('employee-name').textContent = employeeName;
+                    
+                    // Remove the employee from supervisor options
+                    const supervisorSelect = document.getElementById('supervisor-select');
+                    for (let i = 0; i < supervisorSelect.options.length; i++) {
+                        supervisorSelect.options[i].disabled = supervisorSelect.options[i].value === employeeId;
+                    }
+                    
+                    // Show modal
+                    document.getElementById('supervisor-modal').style.display = 'flex';
+                    
+                    // Store selected employee id
+                    document.getElementById('supervisor-modal').setAttribute('data-employee-id', employeeId);
+                });
+            });
+            
+            document.getElementById('cancel-supervisor').addEventListener('click', function() {
+                document.getElementById('supervisor-modal').style.display = 'none';
+            });
+            
+            document.getElementById('save-supervisor').addEventListener('click', function() {
+                const employeeId = document.getElementById('supervisor-modal').getAttribute('data-employee-id');
+                const newSupervisorId = document.getElementById('supervisor-select').value;
+                
+                // Get supervisor name
+                let supervisorName = 'None';
+                if (newSupervisorId) {
+                    const newSupervisorRow = document.querySelector(`tr[data-employee-id="${newSupervisorId}"]`);
+                    supervisorName = newSupervisorRow ? newSupervisorRow.children[1].textContent : 'None';
+                }
+                
+                // Update UI
+                const employeeRow = document.querySelector(`tr[data-employee-id="${employeeId}"]`);
+                employeeRow.children[4].textContent = supervisorName;
+                
+                // Close modal
+                document.getElementById('supervisor-modal').style.display = 'none';
+                
+                showToast(`Supervisor updated successfully!`);
+            });
+            
+            // Create employee modal
+            document.getElementById('create-employee-btn').addEventListener('click', function() {
+                document.getElementById('create-employee-modal').style.display = 'flex';
+            });
+            
+            document.getElementById('cancel-create').addEventListener('click', function() {
+                document.getElementById('create-employee-modal').style.display = 'none';
+            });
+            
+            document.getElementById('create-employee-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const name = document.getElementById('new-name').value;
+                const email = document.getElementById('new-email').value;
+                const position = document.getElementById('new-position').value;
+                const supervisorId = document.getElementById('new-supervisor').value;
+                
+                if (!name || !email || !position) {
+                    showToast('Please fill in all required fields', 'error');
+                    return;
+                }
+                
+                // Get supervisor name
+                let supervisorName = 'None';
+                if (supervisorId) {
+                    const supervisorOptions = document.getElementById('new-supervisor').options;
+                    for (let i = 0; i < supervisorOptions.length; i++) {
+                        if (supervisorOptions[i].value === supervisorId) {
+                            supervisorName = supervisorOptions[i].text.split(' ')[0];
+                            break;
+                        }
+                    }
+                }
+                
+                // Create new employee row
+                const tbody = document.querySelector('#employees-table tbody');
+                const newEmployeeId = tbody.children.length + 1;
+                
+                const newRow = document.createElement('tr');
+                newRow.className = 'employee-row';
+                newRow.setAttribute('data-employee-id', newEmployeeId);
+                newRow.innerHTML = `
+                    <td>${newEmployeeId}</td>
+                    <td>${name}</td>
+                    <td>${email}</td>
+                    <td>${position}</td>
+                    <td>${supervisorName}</td>
+                    <td>
+                        <label class="toggle-switch">
+                            <input type="checkbox" class="availability-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                        <span class="availability-label">AVAILABLE</span>
+                    </td>
+                    <td>
+                        <button class="button change-supervisor-btn">Change Supervisor</button>
+                    </td>
+                `;
+                
+                // Add event listeners
+                const newToggle = newRow.querySelector('.availability-toggle');
+                newToggle.addEventListener('change', function() {
+                    const label = newRow.querySelector('.availability-label');
+                    if (this.checked) {
+                        label.textContent = 'AVAILABLE';
+                        showToast(`Employee #${newEmployeeId} is now available.`);
+                    } else {
+                        label.textContent = 'UNAVAILABLE';
+                        showToast(`Employee #${newEmployeeId} is now unavailable. Pending requests will be escalated.`);
+                    }
+                });
+                
+                const newChangeSupervisorBtn = newRow.querySelector('.change-supervisor-btn');
+                newChangeSupervisorBtn.addEventListener('click', function() {
+                    document.getElementById('employee-name').textContent = name;
+                    
+                    // Remove the employee from supervisor options
+                    const supervisorSelect = document.getElementById('supervisor-select');
+                    for (let i = 0; i < supervisorSelect.options.length; i++) {
+                        supervisorSelect.options[i].disabled = supervisorSelect.options[i].value === newEmployeeId.toString();
+                    }
+                    
+                    // Show modal
+                    document.getElementById('supervisor-modal').style.display = 'flex';
+                    document.getElementById('supervisor-modal').setAttribute('data-employee-id', newEmployeeId);
+                });
+                
+                tbody.appendChild(newRow);
+                
+                // Add to supervisor dropdowns
+                const supervisorOption = document.createElement('option');
+                supervisorOption.value = newEmployeeId;
+                supervisorOption.text = `${name} (${position})`;
+                
+                const supervisorSelects = [
+                    document.getElementById('supervisor-select'),
+                    document.getElementById('new-supervisor')
+                ];
+                
+                supervisorSelects.forEach(select => {
+                    select.appendChild(supervisorOption.cloneNode(true));
+                });
+                
+                // Reset form and close modal
+                document.getElementById('new-name').value = '';
+                document.getElementById('new-email').value = '';
+                document.getElementById('new-position').value = '';
+                document.getElementById('new-supervisor').value = '';
+                document.getElementById('create-employee-modal').style.display = 'none';
+                
+                showToast('Employee created successfully!');
+            });
+        });
+    </script>
+</body>
+</html> 
